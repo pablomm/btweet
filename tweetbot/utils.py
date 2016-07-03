@@ -7,7 +7,7 @@ class Verbose:
 		self.verbose_level = verbose_level
 
 	def lprint(self, level, line):
-		if self.verbose_level <= level:
+		if self.verbose_level >= level:
 			print(line)
 
 	def vprint(self, line):
