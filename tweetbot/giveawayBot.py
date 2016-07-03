@@ -1,22 +1,26 @@
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import
 
 import time
 from tweepy import StreamListener
+from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.utils import import_simplejson
 
+from tweetbot.utils import Verbose
 
-class GiveawayBot(StreamListener):
+
+class GiveawayBot(StreamListener, Verbose):
 
 	def __init__(self, api=None, follow_list=[], fav_list=[], ignore_list=[], **options):
 
 		StreamListener.__init__(self,api)
+		Verbose.__init__(self, options.get("verbose_level", 1))
+
 		self.json = import_simplejson()
 		self.follow_list = follow_list
 		self.fav_list = fav_list
 		self.ignore_list = ignore_list
 
-		self.verbose_level = options.get("verbose_level", 1)
 		self.at = options.get("at", False)
 		self.original = options.get("original", False)
 		self.quoted = options.get("quoted", False)
@@ -31,67 +35,42 @@ class GiveawayBot(StreamListener):
 
 	def on_data(self, data):
 
-		status = Status.parse(self.api, self.json.loads(data))
 		try:
-			status = status.retweeted_status
-		except AttributeError, atr:
-			if not self.original:
-				self._vvprint(">> Original tweet ignored: %s" % status.text)
-				return True
+			status = self._get_status(data)
+			text = self._filter(status)
 
-		if status.is_quote_status:
-			if self.quoted:
-				status = status.quoted_status
-			else:
-				self._vvprint(">> Quoted tweet ignored: %s" % status.text)
-				return True
-
-		if status.text.startswith('@') and not self.at:
-			self._vvprint(">> At tweet ignored: %s" % status.text)
+		except Exception, e:
+			self.vvprint(e)
 			return True
 
-		print("RT %s FAV %s FOL %s" % (status.retweeted, status.favorited, status.user.following))
-		if status.retweeted or status.favorited:
-			self._vvprint(">> Tweet previously parsed: %s" % status.text)
-			return True
-
-		text = status.text.lower()
-		"""
-		print(self.ignore_list)
-		for ignore_word in self.ignore_list:
-			print(ignore_word)
-			if ignore_word in text:
-				self._vvprint(">> Tweet ignored for \"%s\": %s" % (ignore_word, status.text))
-	        	return True
-		"""
 		time = 0
 
 		if self.retweets > status.retweet_count:
-			self._vvprint(">> Not enought retweets: %d/%d" % (status.retweet_count, self.retweets))
+			self.vvprint(">> Not enought retweets: %d/%d" % (status.retweet_count, self.retweets))
 		else:
 			try:
 				status.retweet()
 				time += self.retweet_time
-				self._vprint(">> New retweet @%s: %s" % (status.user.screen_name, status.text))
+				self.vprint(">> New retweet @%s: %s" % (status.user.screen_name, status.text))
 			except Exception, e:
 				time += self.error_time
-				self._vvprint(">> Retweet error: %s" % e)
+				self.vvprint(">> Retweet error: %s" % e)
 				return True
 
 
 		if self.favs > status.favorite_count:
-			self._vvprint(">> Not enought favorites to check: %d/%d" % (status.favorite_count, self.favs))
+			self.vvprint(">> Not enought favorites to check: %d/%d" % (status.favorite_count, self.favs))
 		else:
 			for fav_word in self.fav_list:
 				if fav_word in text:
 					try:
 						status.favorite()
 						time += self.fav_time
-						self._vprint(">> New favorite @%s: %s" % (status.user.screen_name, status.text))
+						self.vprint(">> New favorite @%s: %s" % (status.user.screen_name, status.text))
 						break
 					except Exception, e:
 						time += self.error_time
-						self._vvprint(">> Favorite error: %s" % e)
+						self.vvprint(">> Favorite error: %s" % e)
 						return True
 
 		for follow_word in self.follow_list:
@@ -99,7 +78,7 @@ class GiveawayBot(StreamListener):
 				if not status.user.following:
 					status.user.follow()	
 					time += self.follow_time			
-				self._vprint(">> Follow to @%s: %s" % (status.user.screen_name, status.user.name))
+				self.vprint(">> Follow to @%s: %s" % (status.user.screen_name, status.user.name))
 				break
 
 		if time:
@@ -107,14 +86,43 @@ class GiveawayBot(StreamListener):
 
 		return True
 
+	def _get_status(self, data):
+
+		status = Status.parse(self.api, self.json.loads(data))
+		try:
+			status = status.retweeted_status
+		except AttributeError, atr:
+			if not self.original:
+				raise TweepError(">> Original tweet ignored: %s" % status.text)
+
+		if status.is_quote_status:
+			if self.quoted:
+				status = status.quoted_status
+			else:
+				raise TweepError(">> Quoted tweet ignored: %s" % status.text)
+
+		return status
+
+	def _checklist(self, word_list, text):
+		return any(word in text for word in word_list)
+
+	def _filter(self,status):
+		if status.text.startswith('@') and not self.at:
+			raise TweepError(">> At(@) tweet ignored: %s" % status.text)
+			
+		if status.retweeted or status.favorited:
+			raise TweepError(">> Tweet previously parsed: %s" % status.text)
+
+		text = status.text.lower()
+
+		if self._checklist(self.ignore_list,text):
+			raise TweepError(">> Tweet ignored: %s" % status.text)
+
+		return text
+
+
 	def on_error(self, status):
-		self._vprint(status)
+		self.vprint(status)
 
-	def _vprint(self, line):
-		if self.verbose_level > 0:
-			print(line)
-
-	def _vvprint(self, line):
-		if self.verbose_level > 1:
-			print(line)
+	
 
