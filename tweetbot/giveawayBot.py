@@ -3,19 +3,16 @@ from __future__ import absolute_import
 from time import sleep
 from tweepy.error import TweepError
 from tweepy.models import Status
-from tweepy.streaming import StreamListener
 from tweepy.utils import import_simplejson
 
-from tweetbot.utils import Verbose
+from tweetbot.utils import Interaction, QueuedListener
 
 
-class GiveawayBot(StreamListener, Verbose):
+class GiveawayBot(QueuedListener):
 
 	def __init__(self, api=None, follow_list=[], fav_list=[], ignore_list=[], **options):
-
-		StreamListener.__init__(self,api)
-		Verbose.__init__(self, options.get("verbose_level", 1))
-
+		
+		QueuedListener.__init__(self,api)
 		self.json = import_simplejson()
 		self.follow_list = follow_list
 		self.fav_list = fav_list
@@ -26,41 +23,28 @@ class GiveawayBot(StreamListener, Verbose):
 		self.quoted = options.get("quoted", False)
 		self.favs = options.get("favs", 3)
 		self.retweets = options.get("retweets", 3) 
-		self.retweet_time = options.get("retweet_time", 0)
-		self.fav_time = options.get("fav_time", 0)
-		self.follow_time = options.get("follow_time", 0)
-		self.error_time = options.get("error_time", 0)
-		self.interaction_time = options.get("interaction_time", 0)
-
-
+		
 	def on_data(self, data):
 		
-		self.lprint(3,data)
-
+		self.lprint(3, data)
 		try:
 			status = self._get_status(data)
 			lower_text = self._filter(status)
-			time = self._retweet(status)
 
 		except TweepError, e:
 			self.vvprint(e)
 			return True
-
 		except Exception, e:
 			self.vvprint(">> Unexpected error: %s" % e)
 			return True
 
-		try:
-			time += self._favorite(status,lower_text)
-			time += self._follow(status, lower_text)
-		except Exception, e:
-			self.vvprint(">> Unexpected error: %s" % e)
-			return True
-
-		if time:
-			sleep(time)
+		if self._checkretweet(status):
+			self.add_interaction(Interaction(status, True, self._checkfavorite(status,lower_text), self._checkfollow(status,lower_text)))
 
 		return True
+
+	def on_error(self, status):
+		self.vprint(status)
 
 	def _get_status(self, data):
 
@@ -82,43 +66,15 @@ class GiveawayBot(StreamListener, Verbose):
 	def _checklist(self, word_list, text):
 		return any(word in text for word in word_list)
 
-	def _retweet(self, status):
-		if self.retweets > status.retweet_count:
-			raise TweepError(">> Not enought retweets: %d/%d" % (status.retweet_count, self.retweets))
+	def _checkretweet(self, status):
+		return not self.retweets > status.retweet_count
 
-		try:
-			status.retweet()
-			self.vprint(">> New retweet @%s: %s" % (status.user.screen_name, status.text))
-			return self.retweet_time
+	def _checkfavorite(self, status, text):
+		return self._checklist(self.fav_list, text) and not self.favs > status.favorite_count
 
-		except TweepError, e:
-			raise TweepError(">> Retweet error: %s" % e.reason)
+	def _checkfollow(self, status, text):
+		return not status.user.following and self._checklist(self.follow_list, text)
 
-	def _favorite(self, status, text):
-		if self.favs > status.favorite_count:
-			self.vvprint(">> Not enought favorites to check: %d/%d" % (status.favorite_count, self.favs))
-			
-		elif self._checklist(self.fav_list, text):
-			try:
-				status.favorite()
-				self.vprint(">> New favorite @%s: %s" % (status.user.screen_name, status.text))
-				return self.fav_time
-
-			except TweepError, e:
-				self.vvprint(">> Favorite error: %s" % e)
-				return self.error_time
-		return 0
-
-	def _follow(self, status, text):
-		if not status.user.following and self._checklist(self.follow_list, text):
-			try:
-				status.user.follow()	
-				self.vprint(">> Follow to @%s: %s" % (status.user.screen_name, status.user.name))
-				return self.follow_time
-			except TweepError, e:
-				self.vvprint(">> Favorite error: %s" % e)
-				return self.error_time
-		return 0
 
 	def _filter(self,status):
 		if status.text.startswith('@') and not self.at:
@@ -135,5 +91,4 @@ class GiveawayBot(StreamListener, Verbose):
 		return text
 
 
-	def on_error(self, status):
-		self.vprint(status)
+
