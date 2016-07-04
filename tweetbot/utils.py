@@ -61,7 +61,7 @@ class QueuedListener(StreamListener, Verbose):
 		Verbose.__init__(self, options.get("verbose_level", 1))
 
 		self.queue = Queue(maxsize = options.get("queue_size", 100) )
-		self.queue_thread = Thread(target=self._listen())
+		self.queue_thread = Thread(target=self._listen)
 		self.tweet_list = OrganizedList(options.get("list_size", 50))
 
 		self.retweet_time = options.get("retweet_time", 10)
