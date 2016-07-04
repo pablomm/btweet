@@ -8,6 +8,7 @@ from Queue import Queue
 from threading import Thread
 from time import sleep
 
+from tweepy.models import Status
 from tweepy.streaming import StreamListener
 
 class Verbose:
@@ -33,7 +34,7 @@ class Interaction:
 		self.follow = follow
 
 class OrganizedList:
-	def __init__(self, maximun):
+	def __init__(self, maximun=0):
 		self.list = list()
 		self.maximun = maximun
 
@@ -43,7 +44,7 @@ class OrganizedList:
 	def check(self,element):
 		if not element in self.list:
 			self.list.insert(0, element)
-			if len(self.list) > self.maximun:
+			if len(self.list) > self.maximun and self.maximun:
 				self.list.pop()
 			return False
 
@@ -59,7 +60,7 @@ class QueuedListener(StreamListener, Verbose):
 		StreamListener.__init__(self,api)
 		Verbose.__init__(self, options.get("verbose_level", 1))
 
-		self.queue = Queue()
+		self.queue = Queue(maxsize = options.get("queue_size", 100) )
 		self.queue_thread = Thread(target=self._listen())
 		self.tweet_list = OrganizedList(options.get("list_size", 50))
 
@@ -71,10 +72,9 @@ class QueuedListener(StreamListener, Verbose):
 		self.interaction_time = options.get("interaction_time", 0)
 
 		if options.get("load_timeline",True):
-			self.load_timeline()
-		if options.get("autostart",True):
+			self._load_timeline()
+		if options.get("autostart", True):
 			self.start()
-
 
 	def start(self):
 		self.vprint(">> Starting queue thread")
@@ -84,7 +84,10 @@ class QueuedListener(StreamListener, Verbose):
 		self.vprint(">> Stopping queue thread")
 		self.queue_thread.join()
 
-	def load_timeline(self):
+	def add_interaction(self,interaction):
+		self.queue.put(interaction)
+
+	def _load_timeline(self):
 		pass
 
 	def _retweet(self,interaction):
@@ -94,7 +97,6 @@ class QueuedListener(StreamListener, Verbose):
 				self.vprint(">> New retweet @%s: %s" % (interaction.status.user.screen_name, interaction.status.text))
 				sleep(self.retweet_time)
 			except TweepError, e:
-				sleep(self.error_time)
 				raise TweepError(">> Retweet error: %s" % e.reason)
 		return
 
@@ -105,7 +107,6 @@ class QueuedListener(StreamListener, Verbose):
 				self.vprint(">> New favorite @%s: %s" % (interaction.status.user.screen_name, interaction.status.text))
 				sleep(self.fav_time)
 			except TweepError, e:
-				sleep(self.error_time)
 				raise TweepError(">> Favorite error: %s" % e.reason)
 		return
 
@@ -116,15 +117,12 @@ class QueuedListener(StreamListener, Verbose):
 				self.vprint(">> Follow to @%s: %s" % (interaction.status.user.screen_name, interaction.status.user.name))
 				sleep(self.follow_time)
 			except TweepError, e:
-				sleep(self.error_time)
 				raise TweepError(">> Follow error: %s" % e)
 		return
 
 	def _listen(self):
+		
 		while True:
-			if self.queue.empty()
-				sleep(self.empty_time)
-				continue
 
 			interaction = self.queue.get()
 
@@ -140,5 +138,6 @@ class QueuedListener(StreamListener, Verbose):
 
 			except Exception, e:
 				self.vvprint(e)
+				sleep(self.error_time)
 
 
