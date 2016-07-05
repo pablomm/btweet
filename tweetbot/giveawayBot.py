@@ -1,3 +1,7 @@
+# Tweetbot
+# Copyright 2016 Pablo Marcos
+# See LICENSE for details.
+
 from __future__ import absolute_import
 
 from time import sleep
@@ -12,7 +16,7 @@ class GiveawayBot(QueuedListener):
 
 	def __init__(self, api=None, follow_list=[], fav_list=[], ignore_list=[], **options):
 		
-		QueuedListener.__init__(self,api)
+		QueuedListener.__init__(self,api, **options)
 		self.json = import_simplejson()
 		self.follow_list = follow_list
 		self.fav_list = fav_list
@@ -27,6 +31,7 @@ class GiveawayBot(QueuedListener):
 	def on_data(self, data):
 		
 		self.lprint(3, data)
+
 		try:
 			status = self._get_status(data)
 			lower_text = self._filter(status)
@@ -39,7 +44,7 @@ class GiveawayBot(QueuedListener):
 			return True
 
 		if self._checkretweet(status):
-			self.add_interaction(Interaction(status, True, self._checkfavorite(status,lower_text), self._checkfollow(status,lower_text)))
+			self.add_interaction(status, True, self._checkfavorite(status,lower_text), self._checkfollow(status,lower_text))
 
 		return True
 
@@ -70,7 +75,7 @@ class GiveawayBot(QueuedListener):
 		return not self.retweets > status.retweet_count
 
 	def _checkfavorite(self, status, text):
-		return self._checklist(self.fav_list, text) and not self.favs > status.favorite_count
+		return self._checklist(self.fav_list, text) and self.favs <= status.favorite_count
 
 	def _checkfollow(self, status, text):
 		return not status.user.following and self._checklist(self.follow_list, text)
@@ -89,6 +94,4 @@ class GiveawayBot(QueuedListener):
 			raise TweepError(">> Tweet ignored: %s" % status.text)
 
 		return text
-
-
 
