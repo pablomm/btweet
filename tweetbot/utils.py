@@ -8,8 +8,11 @@ from Queue import Queue
 from threading import Thread
 from time import sleep
 
+from tweepy.cursor import Cursor
+from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.streaming import StreamListener
+
 
 class Verbose:
 
@@ -41,11 +44,16 @@ class OrganizedList:
 	def __str__(self):
 		return str(self.list)
 
-	def check(self,element):
+	def add(self, element):
+		self.list.insert(0, element)
+		if len(self.list) > self.maximun and self.maximun:
+			self.list.pop()
+		return
+
+	def check(self,element, add=True):
 		if not element in self.list:
-			self.list.insert(0, element)
-			if len(self.list) > self.maximun and self.maximun:
-				self.list.pop()
+			if add:
+				self.add(element)
 			return False
 
 		i = self.list.index(element)
@@ -60,9 +68,12 @@ class QueuedListener(StreamListener, Verbose):
 		StreamListener.__init__(self,api)
 		Verbose.__init__(self, options.get("verbose_level", 1))
 
-		self.queue = Queue(maxsize = options.get("queue_size", 100) )
+		self.queue = Queue(maxsize = options.get("queue_size", 20))
+		self.tweet_list = OrganizedList(options.get("list_size", 150))
 		self.queue_thread = Thread(target=self._listen)
-		self.tweet_list = OrganizedList(options.get("list_size", 50))
+		self.queue_thread.daemon = True
+		
+		self.locked = options.get("locked", True)
 
 		self.retweet_time = options.get("retweet_time", 10)
 		self.fav_time = options.get("fav_time", 10)
@@ -84,17 +95,22 @@ class QueuedListener(StreamListener, Verbose):
 		self.vprint(">> Stopping queue thread")
 		self.queue_thread.join()
 
-	def add_interaction(self,interaction):
-		self.queue.put(interaction)
+	def add_interaction(self, status, retweet=False, favorite=False, follow=False):
+		if not self.tweet_list.check(status.id_str, False):
+			self.queue.put(Interaction(status, retweet, favorite, follow))
 
 	def _load_timeline(self):
-		pass
+		size = self.tweet_list.maximun if self.tweet_list.maximun else 20
+
+		for page in Cursor(self.api.user_timeline, count=size, include_rts=True).pages(2):
+			for status in page:
+				self.tweet_list.check(status.id_str)
 
 	def _retweet(self,interaction):
 		if interaction.retweet:
 			try:
 				interaction.status.retweet()
-				self.vprint(">> New retweet @%s: %s" % (interaction.status.user.screen_name, interaction.status.text))
+				self.vprint(">> New retweet")
 				sleep(self.retweet_time)
 			except TweepError, e:
 				raise TweepError(">> Retweet error: %s" % e.reason)
@@ -104,7 +120,7 @@ class QueuedListener(StreamListener, Verbose):
 		if interaction.favorite:
 			try:
 				interaction.status.favorite()
-				self.vprint(">> New favorite @%s: %s" % (interaction.status.user.screen_name, interaction.status.text))
+				self.vprint(">> New favorite")
 				sleep(self.fav_time)
 			except TweepError, e:
 				raise TweepError(">> Favorite error: %s" % e.reason)
@@ -113,7 +129,7 @@ class QueuedListener(StreamListener, Verbose):
 	def _follow(self, interaction):
 		if interaction.follow:
 			try:
-				status.user.follow()	
+				interaction.status.user.follow()	
 				self.vprint(">> Follow to @%s: %s" % (interaction.status.user.screen_name, interaction.status.user.name))
 				sleep(self.follow_time)
 			except TweepError, e:
@@ -123,21 +139,26 @@ class QueuedListener(StreamListener, Verbose):
 	def _listen(self):
 		
 		while True:
+			if not self.locked and self.queue.empty:
+				sleep(self.empty_time) 
 
-			interaction = self.queue.get()
+			self._interact(self.queue.get())
 
-			if self.tweet_list.check(interaction.status.id_str):
-				self.vvprint(">> Status already parsed: %s" % interaction.status.text)
-				continue
+	def _interact(self, interaction):
+		if self.tweet_list.check(interaction.status.id_str):
+			self.vvprint(">> Status already parsed: %s" % interaction.status.text)
+			return
 
-			sleep(self.interaction_time)
-			try:
-				self._retweet(interaction)
-				self._favorite(interaction)
-				self._follow(interaction)
+		sleep(self.interaction_time)
 
-			except Exception, e:
-				self.vvprint(e)
-				sleep(self.error_time)
+		self.vprint(">> Proccessing @%s: %s" % (interaction.status.user.screen_name, interaction.status.id_str))
+		self.vvprint(">> Text: %s" % interaction.status.text)
 
+		try:
+			self._retweet(interaction)
+			self._favorite(interaction)
+			self._follow(interaction)
 
+		except TweepError, e:
+			self.vvprint(e)
+			sleep(self.error_time)
