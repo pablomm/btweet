@@ -1,4 +1,4 @@
-# Tweetbot
+# BTweet
 # Copyright 2016 Pablo Marcos
 # See LICENSE for details.
 
@@ -86,6 +86,7 @@ class QueuedListener(StreamListener, Verbose):
 			self._load_timeline()
 		if options.get("autostart", True):
 			self.start()
+			
 
 	def start(self):
 		self.vprint(">> Starting queue thread")
@@ -94,6 +95,11 @@ class QueuedListener(StreamListener, Verbose):
 	def stop(self):
 		self.vprint(">> Stopping queue thread")
 		self.queue_thread.join()
+
+	def restart(self):
+		if not self.queue_thread.isAlive():
+			self.queue_thread = Thread(target=self._listen)
+			self.queue_thread.daemon = True
 
 	def add_interaction(self, status, retweet=False, favorite=False, follow=False):
 		if not self.tweet_list.check(status.id_str, False):

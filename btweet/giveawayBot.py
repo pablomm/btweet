@@ -1,4 +1,4 @@
-# Tweetbot
+# BTweet
 # Copyright 2016 Pablo Marcos
 # See LICENSE for details.
 
@@ -9,7 +9,7 @@ from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.utils import import_simplejson
 
-from tweetbot.utils import Interaction, QueuedListener
+from btweet.utils import Interaction, QueuedListener
 
 
 class GiveawayBot(QueuedListener):
@@ -30,8 +30,6 @@ class GiveawayBot(QueuedListener):
 		
 	def on_data(self, data):
 		
-		self.lprint(3, data)
-
 		try:
 			status = self._get_status(data)
 			lower_text = self._filter(status)

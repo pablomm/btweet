@@ -1,6 +1,12 @@
+# BTweet
+# Copyright 2016 Pablo Marcos
+# See LICENSE for details.
+
 from __future__ import absolute_import, print_function
+
 from tweepy import API, OAuthHandler, Stream
-from tweetbot.giveawayBot import GiveawayBot
+
+from btweet.giveawayBot import GiveawayBot
 
 
 #Auth Keys 
@@ -10,10 +16,10 @@ access_token= ""
 access_token_secret= ""
 
 #Bot lists
-track_list = ["retweet to win","sorteo RT","concurso RT"]
-ignore_list = ["plz","ayuda","gracias","please","favor","signup","thanks","justin","bieber","5sos","vma","minecraft","vote","vota","twitch"]
-follow_list = ["#follow","follow","sigue","sigueme","seguir","following","siguiendo","seguidores","seguidor","rt+follow"]
-fav_list = ["fav","rt+fav","fave","favorito","favorite"]
+track_list = []
+ignore_list = []
+follow_list = []
+fav_list = []
 
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
@@ -35,4 +41,9 @@ if __name__ == '__main__':
 
 		except UnicodeEncodeError:
 			print(">> Unicode exception")
+
+		except Exception, e:
+			print(">> Exception %s" % e)
+			listener.restart()
+			sleep(10)
 
