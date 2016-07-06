@@ -6,26 +6,20 @@ from __future__ import absolute_import, print_function
 
 from tweepy import API, OAuthHandler, Stream
 
+from btweet.authKeys import *
 from btweet.giveawayBot import GiveawayBot
 
-
-#Auth Keys 
-consumer_key= ""
-consumer_secret= ""
-access_token= ""
-access_token_secret= ""
-
-#Bot lists
 track_list = []
 ignore_list = []
 follow_list = []
 fav_list = []
+user_list = []
 
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 api = API(auth)
 
-listener = GiveawayBot(api, follow_list, fav_list, ignore_list, verbose_level=2)
+listener = GiveawayBot(api, follow_list, fav_list, ignore_list, user_list, verbose_level=2)
 
 if __name__ == '__main__':
 
