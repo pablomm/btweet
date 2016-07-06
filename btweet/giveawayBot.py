@@ -14,13 +14,14 @@ from btweet.utils import Interaction, QueuedListener
 
 class GiveawayBot(QueuedListener):
 
-	def __init__(self, api=None, follow_list=[], fav_list=[], ignore_list=[], **options):
+	def __init__(self, api=None, follow_list=[], fav_list=[], ignore_list=[], block_users = [], **options):
 		
 		QueuedListener.__init__(self,api, **options)
 		self.json = import_simplejson()
 		self.follow_list = follow_list
 		self.fav_list = fav_list
 		self.ignore_list = ignore_list
+		self.block_users = block_users
 
 		self.at = options.get("at", False)
 		self.original = options.get("original", False)
@@ -91,5 +92,7 @@ class GiveawayBot(QueuedListener):
 		if self._checklist(self.ignore_list,text):
 			raise TweepError(">> Tweet ignored: %s" % status.text)
 
+		if status.user.screen_name in self.block_users:
+			raise TweepError(">> User ignored: @%s" % status.user.screen_name)
 		return text
 
