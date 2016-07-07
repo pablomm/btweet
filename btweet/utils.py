@@ -8,11 +8,23 @@ from Queue import Queue
 from threading import Thread
 from time import sleep
 
+import json
+
+from tweepy import API, OAuthHandler
 from tweepy.cursor import Cursor
 from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.streaming import StreamListener
 
+def load_auth(path_file):
+
+	with open(path_file) as data_file:    
+		data = json.load(data_file)
+
+	auth = OAuthHandler(data["consumer_key"], data["consumer_secret"])
+	auth.set_access_token(data["access_token"], data["access_token_secret"])
+
+	return auth, API(auth)
 
 class Verbose:
 
@@ -69,7 +81,7 @@ class QueuedListener(StreamListener, Verbose):
 		Verbose.__init__(self, options.get("verbose_level", 1))
 
 		self.queue = Queue(maxsize = options.get("queue_size", 20))
-		self.tweet_list = OrganizedList(options.get("list_size", 150))
+		self.tweet_list = OrganizedList(options.get("list_size", 250))
 		self.queue_thread = Thread(target=self._listen)
 		self.queue_thread.daemon = True
 		
@@ -110,6 +122,10 @@ class QueuedListener(StreamListener, Verbose):
 
 		for page in Cursor(self.api.user_timeline, count=size, include_rts=True).pages(2):
 			for status in page:
+				try:
+					status = status.retweeted_status
+				except AttributeError, atr:
+					pass
 				self.tweet_list.check(status.id_str)
 
 	def _retweet(self,interaction):
