@@ -127,7 +127,7 @@ class QueuedListener(StreamListener, Verbose):
 			for status in page:
 				try:
 					status = status.retweeted_status
-				except AttributeError, atr:
+				except AttributeError as atr:
 					pass
 				self.tweet_list.check(status.id_str)
 
@@ -137,7 +137,7 @@ class QueuedListener(StreamListener, Verbose):
 				interaction.status.retweet()
 				self.vprint(">> New retweet")
 				sleep(self.retweet_time)
-			except TweepError, e:
+			except TweepError as e:
 				raise TweepError(">> Retweet error: %s" % e.reason)
 		return
 
@@ -147,7 +147,7 @@ class QueuedListener(StreamListener, Verbose):
 				interaction.status.favorite()
 				self.vprint(">> New favorite")
 				sleep(self.fav_time)
-			except TweepError, e:
+			except TweepError as e:
 				raise TweepError(">> Favorite error: %s" % e.reason)
 		return
 
@@ -157,7 +157,7 @@ class QueuedListener(StreamListener, Verbose):
 				interaction.status.user.follow()	
 				self.vprint(">> Follow to @%s: %s" % (interaction.status.user.screen_name, interaction.status.user.name))
 				sleep(self.follow_time)
-			except TweepError, e:
+			except TweepError as e:
 				raise TweepError(">> Follow error: %s" % e)
 		return
 
@@ -186,6 +186,6 @@ class QueuedListener(StreamListener, Verbose):
 			self._favorite(interaction)
 			self._follow(interaction)
 
-		except TweepError, e:
+		except TweepError as e:
 			self.vvprint(e)
 			sleep(self.error_time)

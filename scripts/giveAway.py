@@ -32,7 +32,7 @@ if __name__ == '__main__':
 			stream = Stream(auth, listener)
 			stream.filter(track = track_list)
 
-		except KeyboardInterrupt, k:
+		except KeyboardInterrupt:
 			if("y" in raw_input("Are you sure?")):
 				listener.stop()
 				stream.disconnect()
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 		except UnicodeEncodeError:
 			print(">> Unicode exception")
 
-		except Exception, e:
+		except Exception as e:
 			print(">> Exception %s" % e)
 			listener.restart()
 			sleep(10)

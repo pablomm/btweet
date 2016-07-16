@@ -38,7 +38,7 @@ class GiveawayBot(QueuedListener):
 		except TweepError, e:
 			self.vvprint(e)
 			return True
-		except Exception, e:
+		except Exception as e:
 			self.vvprint(">> Unexpected error: %s" % e)
 			return True
 
