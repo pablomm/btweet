@@ -16,6 +16,12 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.par
 from btweet.giveawayBot import GiveawayBot
 from btweet.utils import load_auth
 
+# Fix Python 2.x.
+try: 
+	input = raw_input
+except NameError: 
+	pass
+
 track_list = ["retweet to win","sorteo RT","concurso RT"]
 ignore_list = ["plz","ayuda","gracias","please","favor","signup","thanks","justin","bieber","5sos","vma","minecraft","vote","vota","twitch"]
 follow_list = ["#follow","follow","sigue","sigueme","seguir","following","siguiendo","seguidores","seguidor","rt+follow"]
