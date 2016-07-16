@@ -4,7 +4,14 @@
 
 from __future__ import absolute_import, print_function
 
-from Queue import Queue
+try:
+	#Python 3.x import
+	from queue import Queue
+
+except ImportError:
+	#Python 2.x import
+	from Queue import Queue
+
 from threading import Thread
 from time import sleep
 from sys import exit
