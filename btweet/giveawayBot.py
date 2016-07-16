@@ -53,6 +53,9 @@ class GiveawayBot(QueuedListener):
 	def _get_status(self, data):
 
 		status = Status.parse(self.api, self.json.loads(data))
+
+		if status.user.screen_name in self.block_users:
+			raise TweepError(">> User ignored: @%s" % status.user.screen_name)
 		try:
 			status = status.retweeted_status
 		except AttributeError, atr:

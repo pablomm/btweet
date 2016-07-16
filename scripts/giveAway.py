@@ -16,11 +16,11 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.par
 from btweet.giveawayBot import GiveawayBot
 from btweet.utils import load_auth
 
-track_list = []
-ignore_list = []
-follow_list = []
-fav_list = []
-user_list = []
+track_list = ["retweet to win","sorteo RT","concurso RT"]
+ignore_list = ["plz","ayuda","gracias","please","favor","signup","thanks","justin","bieber","5sos","vma","minecraft","vote","vota","twitch"]
+follow_list = ["#follow","follow","sigue","sigueme","seguir","following","siguiendo","seguidores","seguidor","rt+follow"]
+fav_list = ["fav","rt+fav","fave","favorito","favorite","like","mg"]
+user_list = ["ElisaNyan01","jazzmaniatico"]
 
 auth, api = load_auth("KEYS.json")
 listener = GiveawayBot(api, follow_list, fav_list, ignore_list, user_list, verbose_level=1)
@@ -35,6 +35,7 @@ if __name__ == '__main__':
 		except KeyboardInterrupt, k:
 			if("y" in raw_input("Are you sure?")):
 				listener.stop()
+				stream.disconnect()
 				exit()
 
 		except UnicodeEncodeError:

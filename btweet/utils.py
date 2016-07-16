@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function
 from Queue import Queue
 from threading import Thread
 from time import sleep
+from sys import exit
 
 import json
 
@@ -26,7 +27,7 @@ def load_auth(path_file):
 
 	return auth, API(auth)
 
-class Verbose:
+class Verbose(object):
 
 	def __init__(self, verbose_level=1):
 		self.verbose_level = verbose_level
@@ -41,14 +42,14 @@ class Verbose:
 	def vvprint(self, line):
 		self.lprint(2, line)
 
-class Interaction:
+class Interaction(object):
 	def __init__(self, status, retweet=False, favorite=False, follow=False):
 		self.status = status
 		self.retweet = retweet
 		self.favorite = favorite
 		self.follow = follow
 
-class OrganizedList:
+class OrganizedList(object):
 	def __init__(self, maximun=0):
 		self.list = list()
 		self.maximun = maximun
@@ -84,9 +85,9 @@ class QueuedListener(StreamListener, Verbose):
 		self.tweet_list = OrganizedList(options.get("list_size", 250))
 		self.queue_thread = Thread(target=self._listen)
 		self.queue_thread.daemon = True
+		self.running = False
 		
 		self.locked = options.get("locked", True)
-
 		self.retweet_time = options.get("retweet_time", 10)
 		self.fav_time = options.get("fav_time", 10)
 		self.follow_time = options.get("follow_time", 10)
@@ -99,17 +100,19 @@ class QueuedListener(StreamListener, Verbose):
 		if options.get("autostart", True):
 			self.start()
 			
-
 	def start(self):
 		self.vprint(">> Starting queue thread")
+		self.running = True
 		self.queue_thread.start()
 
 	def stop(self):
 		self.vprint(">> Stopping queue thread")
+		self.running = False
 		self.queue_thread.join()
 
 	def restart(self):
 		if not self.queue_thread.isAlive():
+			self.running = True
 			self.queue_thread = Thread(target=self._listen)
 			self.queue_thread.daemon = True
 
@@ -160,11 +163,13 @@ class QueuedListener(StreamListener, Verbose):
 
 	def _listen(self):
 		
-		while True:
+		while self.running:
 			if not self.locked and self.queue.empty:
 				sleep(self.empty_time) 
 
 			self._interact(self.queue.get())
+
+		exit()
 
 	def _interact(self, interaction):
 		if self.tweet_list.check(interaction.status.id_str):
