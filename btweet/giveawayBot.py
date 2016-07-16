@@ -35,7 +35,7 @@ class GiveawayBot(QueuedListener):
 			status = self._get_status(data)
 			lower_text = self._filter(status)
 
-		except TweepError, e:
+		except TweepError as e:
 			self.vvprint(e)
 			return True
 		except Exception as e:
@@ -58,7 +58,7 @@ class GiveawayBot(QueuedListener):
 			raise TweepError(">> User ignored: @%s" % status.user.screen_name)
 		try:
 			status = status.retweeted_status
-		except AttributeError, atr:
+		except AttributeError as atr:
 			if not self.original:
 				raise TweepError(">> Original tweet ignored: %s" % status.text)
 
