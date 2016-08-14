@@ -116,7 +116,7 @@ def progress(count, total, suffix=''):
 	sys.stdout.flush()
  
 #Handle twitter accounts
-user1_handle = "@HillaryClinton" #Barack Obama
+user1_handle = "@HillaryClinton" #Hillary Clinton
 user2_handle = "@realDonaldTrump" #Donald Trump
 
 def main():
