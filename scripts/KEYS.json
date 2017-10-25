@@ -1,9 +1,9 @@
 {
-  "consumer_key": "h4mupsFWb1q6wDuzUEcc4NsEg",
+  "consumer_key": " Your consumer key ",
   
-  "consumer_secret": "OTmVbZYJZPMYEh1KV8UjbJhsU9PrhIf5yImOYWEpIT9yGK5sff",
+  "consumer_secret": " Your consumer secret ",
   
-  "access_token": "2240577112-nvidqrKtoQUsSXUJEkBGYpGRa2patIQquEA98gS",
+  "access_token": " Your access token",
   
-  "access_token_secret": "8ZMt1B6mBv0gWmck9XcFgiH2xOaF03DQdMjoSULRsJPWO"
+  "access_token_secret": " Your access token secret "
 }
