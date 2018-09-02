@@ -26,6 +26,7 @@ import argparse
 import os
 import signal
 
+from daemonize import Daemonize
 from time import sleep
 
 # Fix Python 2.x.
@@ -48,6 +49,7 @@ data_folder = os.path.join(folder, 'data')
 credentials_file = os.path.join(data_folder, 'credentials.json')
 options_file = os.path.join(data_folder, 'options.json')
 filters_file = os.path.join(data_folder, 'filters.json')
+pid_file = os.path.join(data_folder, 'btweet.pid')
 
 listener = None
 stream = None
@@ -172,12 +174,13 @@ def load_credentials():
 
 def handler(signum, frame):
     print("\r", end='')
-    listener.stop()
-    stream.disconnect()
+    if listener: listener.stop()
+    if stream: stream.disconnect()
+    if daemon: daemon.exit()
     exit()
 
 
-def launch_giveaway(verbose_level):
+def launch_giveaway(verbose_level=0):
     from tweepy import Stream
     from btweet.giveawayBot import GiveawayBot
 
@@ -264,6 +267,21 @@ def set_option(option, value):
     with open(options_file, 'w') as f:
         json.dump(options,f)
 
+def check_daemon():
+
+    if not os.path.exists(pid_file):
+        return 0
+
+    with open(pid_file) as f:
+        pid = int(f.read())
+
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return 0
+    else:
+        return pid
+
 
 class Parser:
 
@@ -329,16 +347,34 @@ class Parser:
 
         launch_giveaway(parsed.verbose + 1)
 
-
-
     def start(self, args):
-        print('start')
+
+        run_parser = argparse.ArgumentParser(prog='btweet start')
+
+        pid = check_daemon()
+
+        if pid:
+            print("btweet: Error, the daemon is already running with pid %d." % pid)
+            return
+        global daemon
+
+        daemon = Daemonize(app="btweet", pid=pid_file, action=launch_giveaway)
+        daemon.start()
 
     def stats(self, args):
         print('stats')
 
     def stop(self, args):
-        print('stop')
+        run_parser = argparse.ArgumentParser(prog='btweet stop')
+
+        pid = check_daemon()
+
+        if pid:
+            os.kill(pid, signal.SIGINT)
+            print("btweet: Stopping daemon running with pid %d." % pid)
+        else:
+            print("btweet: Error, the daemon is not running.")
+
 
     def get(self, args):
 
