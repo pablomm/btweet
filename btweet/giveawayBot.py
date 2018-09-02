@@ -4,7 +4,6 @@
 
 from __future__ import absolute_import
 
-from time import sleep
 from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.utils import import_simplejson
@@ -14,23 +13,24 @@ from btweet.utils import Interaction, QueuedListener
 
 class GiveawayBot(QueuedListener):
 
-	def __init__(self, api=None, follow_list=[], fav_list=[], ignore_list=[], block_users = [], **options):
-		
+	def __init__(self, api=None, **options):
+
 		QueuedListener.__init__(self,api, **options)
 		self.json = import_simplejson()
-		self.follow_list = follow_list
-		self.fav_list = fav_list
-		self.ignore_list = ignore_list
-		self.block_users = block_users
+		self.follow_list = options.get("follow_list", [])
+		self.fav_list = options.get("fav_list", [])
+		self.ignore_list = options.get("ignore_list", [])
+		self.block_users = options.get("block_users", [])
 
 		self.at = options.get("at", False)
 		self.original = options.get("original", False)
 		self.quoted = options.get("quoted", False)
 		self.favs = options.get("favs", 3)
-		self.retweets = options.get("retweets", 3) 
-		
+		self.retweets = options.get("retweets", 3)
+
+
 	def on_data(self, data):
-		
+
 		try:
 			status = self._get_status(data)
 			lower_text = self._filter(status)
@@ -86,7 +86,7 @@ class GiveawayBot(QueuedListener):
 	def _filter(self,status):
 		if status.text.startswith('@') and not self.at:
 			raise TweepError(">> At(@) tweet ignored: %s" % status.text)
-			
+
 		if status.retweeted or status.favorited:
 			raise TweepError(">> Tweet previously parsed: %s" % status.text)
 
@@ -98,4 +98,3 @@ class GiveawayBot(QueuedListener):
 		if status.user.screen_name in self.block_users:
 			raise TweepError(">> User ignored: @%s" % status.user.screen_name)
 		return text
-

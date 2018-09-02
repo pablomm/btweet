@@ -25,6 +25,29 @@ from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.streaming import StreamListener
 
+def restore_filters(filter_file):
+	default_filters = {
+	'track_list' : ["retweet to win","sorteo RT","concurso RT"],
+    'ignore_list' : ["plz","ayuda","gracias","please","favor","signup","thanks","justin","bieber","5sos","vma","minecraft","vote","vota","twitch"],
+    'follow_list' : ["#follow","follow","sigue","sigueme","seguir","following","siguiendo","seguidores","seguidor","rt+follow"],
+    'fav_list' : ["fav","rt+fav","fave","favorito","favorite","like","mg"],
+    'user_list' : [],
+	}
+
+	with open(filter_file, 'w+') as f:
+		json.dump(default_filters, f)
+
+	return default_filters
+
+def load_filters(filter_file):
+
+	if not os.path.exists(filter_file):
+		return restore_filters(filter_file)
+
+	with open(filter_file) as f:
+		filters = json.load(f)
+
+	return filters
 
 def restore_options(options_file):
 
@@ -141,10 +164,13 @@ class QueuedListener(StreamListener, Verbose):
 		self.empty_time = options.get("empty_time", 10)
 		self.interaction_time = options.get("interaction_time", 0)
 
+
 		if options.get("load_timeline",True):
 			self._load_timeline()
 		if options.get("autostart", True):
 			self.start()
+
+
 
 	def start(self):
 		self.vprint(">> Starting queue thread")
@@ -167,7 +193,10 @@ class QueuedListener(StreamListener, Verbose):
 			self.queue.put(Interaction(status, retweet, favorite, follow))
 
 	def _load_timeline(self):
+
 		size = self.tweet_list.maximun if self.tweet_list.maximun else 20
+
+		self.vprint(">> Loading timeline of size %d" % size)
 
 		for page in Cursor(self.api.user_timeline, count=size, include_rts=True).pages(2):
 			for status in page:

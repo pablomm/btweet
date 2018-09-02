@@ -24,6 +24,7 @@ from __future__ import print_function, absolute_import
 
 import argparse
 import os
+import signal
 
 from time import sleep
 
@@ -35,7 +36,7 @@ except NameError:
 
 from tweepy import API, OAuthHandler
 
-from btweet.utils import load_options, restore_options
+from btweet.utils import load_options, restore_options, load_filters, restore_filters
 
 
 # Lists of commands
@@ -46,6 +47,10 @@ folder = os.path.dirname(os.path.realpath(__file__))
 data_folder = os.path.join(folder, 'data')
 credentials_file = os.path.join(data_folder, 'credentials.json')
 options_file = os.path.join(data_folder, 'options.json')
+filters_file = os.path.join(data_folder, 'filters.json')
+
+listener = None
+stream = None
 
 def suggestion(candidate, words):
     """ Provides the most similar word in the list based on the levenshtein
@@ -108,7 +113,7 @@ def check_credentials(credentials):
 
     auth, api = load_auth(credentials)
 
-    print("Using credentials of @" + auth.get_username())
+    print(">> Using credentials of @" + auth.get_username())
 
     return True
 
@@ -165,38 +170,42 @@ def load_credentials():
 
     return credentials
 
+def handler(signum, frame):
+    print("\r", end='')
+    listener.stop()
+    stream.disconnect()
+    exit()
+
+
 def launch_giveaway(verbose_level):
     from tweepy import Stream
     from btweet.giveawayBot import GiveawayBot
 
-    print("Running giveaway bot")
+    global listener
+    global stream
+
+    print("btweet: Running giveaway bot")
     credentials = load_credentials()
     if credentials == None: return
 
     options = load_options(options_file)
 
     options = options_values(options)
-
-    track_list = ["retweet to win","sorteo RT","concurso RT"]
-    ignore_list = ["plz","ayuda","gracias","please","favor","signup","thanks","justin","bieber","5sos","vma","minecraft","vote","vota","twitch"]
-    follow_list = ["#follow","follow","sigue","sigueme","seguir","following","siguiendo","seguidores","seguidor","rt+follow"]
-    fav_list = ["fav","rt+fav","fave","favorito","favorite","like","mg"]
-    user_list = ["jazzmaniatico"]
+    filters = load_filters(filters_file)
+    options = {**filters, **options}
+    track_list = filters['track_list']
 
     auth, api = load_auth(credentials)
-    listener = GiveawayBot(api, follow_list, fav_list, ignore_list, user_list, verbose_level=verbose_level, **options)
+    listener = GiveawayBot(api, verbose_level=verbose_level, **options)
 
+    signal.signal(signal.SIGINT, handler)
 
     while True:
         try:
             stream = Stream(auth, listener)
             stream.filter(track = track_list)
 
-        except KeyboardInterrupt:
-            if("y" in input("Are you sure?")):
-                listener.stop()
-                stream.disconnect()
-                exit()
+
 
         except UnicodeEncodeError:
             print(">> Unicode exception")
@@ -254,8 +263,6 @@ def set_option(option, value):
 
     with open(options_file, 'w') as f:
         json.dump(options,f)
-
-
 
 
 class Parser:
@@ -320,7 +327,7 @@ class Parser:
                                  help='verbose mode')
         parsed = run_parser.parse_args(args)
 
-        launch_giveaway(parsed.verbose)
+        launch_giveaway(parsed.verbose + 1)
 
 
 
@@ -359,12 +366,16 @@ class Parser:
             restore_options(options_file)
             print("btweet: Default options restored.")
         elif parsed.value != None:
-            set_option(parsed.option[0], parsed.value[0])
+            set_option(parsed.option[0], parsed.value)
         else:
             print("btweet: Error. Must set a value to the option.")
 
     def filter(self, args):
-        print('filter')
+
+        print(load_filters(filters_file))
+        filter_parser = argparse.ArgumentParser(prog='btweet filter')
+
+        filter_parser.add_argument("filter", nargs=1)
 
     def usage(self, args):
         print('usage')

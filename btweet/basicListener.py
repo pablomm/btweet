@@ -24,12 +24,9 @@ class BasicListener(StreamListener):
 		self.print_data = options.get("print_data", False)
 		self.delay = int(options.get("delay", 0))
 
-"""
-'author', 'contributors', 'coordinates',, 'destroy', 'entities', 'favorite', '', 'favorited', 'filter_level', 'geo', ''', 'in_reply_to_screen_name', 'in_reply_to_status_id', 'in_reply_to_status_id_str', 'in_reply_to_user_id', 'in_reply_to_user_id_str', 'is_quote_status', 'lang', 'parse', 'parse_list', 'place', 'retweet', '', 'retweeted', 'retweets', 'source', '', '', 
-"""
 
 	def on_data(self,data):
-		
+
 		if self.print_data:
 			print(data)
 
@@ -38,11 +35,3 @@ class BasicListener(StreamListener):
 
 	def _print_status(self, status):
 		print(dir(status))
-
-
-
-
-
-
-
-
