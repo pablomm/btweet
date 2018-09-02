@@ -35,14 +35,17 @@ except NameError:
 
 from tweepy import API, OAuthHandler
 
+from btweet.utils import load_options, restore_options
+
 
 # Lists of commands
-commands = ['auth', 'help', 'run', 'start', 'stats', 'stop', 'options', 'words']
+commands = ['auth', 'get', 'help', 'run', 'set', 'start', 'stats', 'stop', 'filter']
 
 # Script folders and files
 folder = os.path.dirname(os.path.realpath(__file__))
 data_folder = os.path.join(folder, 'data')
 credentials_file = os.path.join(data_folder, 'credentials.json')
+options_file = os.path.join(data_folder, 'options.json')
 
 def suggestion(candidate, words):
     """ Provides the most similar word in the list based on the levenshtein
@@ -90,6 +93,8 @@ def request_credentials():
     credentials["access_token"] = input("Access Token: ")
     credentials["access_token_secret"] = input("Access Token Secret: ")
 
+    check_credentials(credentials)
+
     with open(credentials_file, 'w+') as f:
         json.dump(credentials, f)
 
@@ -135,6 +140,14 @@ def delete_credentials():
         print("There aren't credentials to delete.\n" \
               "Use 'btweet help auth' for get some help.")
 
+def options_values(options):
+    values = {}
+
+    for op in options:
+        values[op] = options[op]['value']
+
+    return values
+
 def load_credentials():
 
     import json
@@ -151,6 +164,98 @@ def load_credentials():
             credentials = None
 
     return credentials
+
+def launch_giveaway(verbose_level):
+    from tweepy import Stream
+    from btweet.giveawayBot import GiveawayBot
+
+    print("Running giveaway bot")
+    credentials = load_credentials()
+    if credentials == None: return
+
+    options = load_options(options_file)
+
+    options = options_values(options)
+
+    track_list = ["retweet to win","sorteo RT","concurso RT"]
+    ignore_list = ["plz","ayuda","gracias","please","favor","signup","thanks","justin","bieber","5sos","vma","minecraft","vote","vota","twitch"]
+    follow_list = ["#follow","follow","sigue","sigueme","seguir","following","siguiendo","seguidores","seguidor","rt+follow"]
+    fav_list = ["fav","rt+fav","fave","favorito","favorite","like","mg"]
+    user_list = ["jazzmaniatico"]
+
+    auth, api = load_auth(credentials)
+    listener = GiveawayBot(api, follow_list, fav_list, ignore_list, user_list, verbose_level=verbose_level, **options)
+
+
+    while True:
+        try:
+            stream = Stream(auth, listener)
+            stream.filter(track = track_list)
+
+        except KeyboardInterrupt:
+            if("y" in input("Are you sure?")):
+                listener.stop()
+                stream.disconnect()
+                exit()
+
+        except UnicodeEncodeError:
+            print(">> Unicode exception")
+
+        except Exception as e:
+            print(">> Exception %s" % e)
+            listener.restart()
+            sleep(10)
+
+def show_options(option):
+    options = load_options(options_file)
+
+    if option == 'all':
+        print("Available options")
+        for op in options:
+            print(op,options[op]['value'],options[op]['description'])
+    else:
+
+        options_names = list(options.keys())
+        if not option in options_names:
+            op = suggestion(option, options_names)
+            print("btweet: Invalid option. The most similar option is '" + op + "'.")
+            print("Use 'btweet help get' for get some help.")
+
+        else:
+            print(option,options[option]['value'],options[option]['description'])
+
+def set_option(option, value):
+    import json
+    options = load_options(options_file)
+
+    options_names = list(options.keys())
+
+    if not option in options_names:
+        op = suggestion(option, options_names)
+        print("btweet: Invalid option. The most similar option is '" + op + "'.")
+        print("Use 'btweet help get' for get some help.")
+        return
+
+    try:
+        if options[option]['type'] == 'int':
+            value = int(value)
+        elif options[option]['type'] == 'bool':
+            if value.lower() in ("yes", "true", "t", "1"):
+                value = True
+            elif value.lower() in ("no", "false", "f", "0"):
+                value = False
+            else: raise ValueError
+
+    except:
+        print("btweet: Invalid value. Must be",options[option]['type'] + ".")
+        return
+
+    options[option]['value'] = value
+
+    with open(options_file, 'w') as f:
+        json.dump(options,f)
+
+
 
 
 class Parser:
@@ -210,41 +315,13 @@ class Parser:
 
     def run(self, args):
 
-        from tweepy import Stream
-        from btweet.giveawayBot import GiveawayBot
+        run_parser = argparse.ArgumentParser(prog='btweet run')
+        run_parser.add_argument('-v', '--verbose', action='count', default=0,
+                                 help='verbose mode')
+        parsed = run_parser.parse_args(args)
 
-        print("Running giveaway bot")
-        credentials = load_credentials()
-        if credentials == None: return
+        launch_giveaway(parsed.verbose)
 
-        track_list = ["retweet to win","sorteo RT","concurso RT"]
-        ignore_list = ["plz","ayuda","gracias","please","favor","signup","thanks","justin","bieber","5sos","vma","minecraft","vote","vota","twitch"]
-        follow_list = ["#follow","follow","sigue","sigueme","seguir","following","siguiendo","seguidores","seguidor","rt+follow"]
-        fav_list = ["fav","rt+fav","fave","favorito","favorite","like","mg"]
-        user_list = ["jazzmaniatico"]
-
-        auth, api = load_auth(credentials)
-        listener = GiveawayBot(api, follow_list, fav_list, ignore_list, user_list, verbose_level=1)
-
-
-        while True:
-            try:
-                stream = Stream(auth, listener)
-                stream.filter(track = track_list)
-
-            except KeyboardInterrupt:
-                if("y" in input("Are you sure?")):
-                    listener.stop()
-                    stream.disconnect()
-                    exit()
-
-            except UnicodeEncodeError:
-                print(">> Unicode exception")
-
-            except Exception as e:
-                print(">> Exception %s" % e)
-                listener.restart()
-                sleep(10)
 
 
     def start(self, args):
@@ -256,11 +333,38 @@ class Parser:
     def stop(self, args):
         print('stop')
 
-    def options(self, args):
-        print('options')
+    def get(self, args):
 
-    def words(self, args):
-        print('words')
+        options_parser = argparse.ArgumentParser(prog='btweet get')
+        options_parser.add_argument('option', nargs='?', default='all',
+                            help='option to get value', type=str)
+
+        parsed = options_parser.parse_args(args)
+
+        show_options(parsed.option)
+
+
+    def set(self, args):
+
+        options_parser = argparse.ArgumentParser(prog='btweet get')
+
+        options_parser.add_argument('option', nargs=1,
+                            help='option to set value')
+        options_parser.add_argument('value', nargs='?',
+                            help='value to set')
+
+        parsed = options_parser.parse_args(args)
+
+        if parsed.option[0] == "default":
+            restore_options(options_file)
+            print("btweet: Default options restored.")
+        elif parsed.value != None:
+            set_option(parsed.option[0], parsed.value[0])
+        else:
+            print("btweet: Error. Must set a value to the option.")
+
+    def filter(self, args):
+        print('filter')
 
     def usage(self, args):
         print('usage')

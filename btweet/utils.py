@@ -15,6 +15,7 @@ except ImportError:
 from threading import Thread
 from time import sleep
 from sys import exit
+import os
 
 import json
 
@@ -24,9 +25,47 @@ from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.streaming import StreamListener
 
+
+def restore_options(options_file):
+
+	default_options = {
+		'username' : {'value' : None, 'type' : 'str', 'description': ''},
+		'at': {'value' : False, 'type' : 'bool', 'description': ''},
+		'original': {'value' : False, 'bool' : 'str', 'description': ''},
+		'quoted': {'value' : False, 'type' : 'str', 'description': ''},
+		'favs' : {'value' : 3, 'type' : 'int', 'description': ''},
+		'retweets' : {'value' : 3, 'type' : 'int', 'description': ''},
+		"queue_size" : {'value' : 20, 'type' : 'int', 'description': ''},
+		"list_size" : {'value' : 250, 'type' : 'int', 'description': ''},
+		"locked" : {'value' : True, 'type' : 'bool', 'description': ''},
+		"retweet_time" : {'value' : 10, 'type' : 'int', 'description': ''},
+		"fav_time" : {'value' : 10, 'type' : 'int', 'description': ''},
+		"follow_time" : {'value' : 10, 'type' : 'int', 'description': ''},
+		"error_time" : {'value' : 10, 'type' : 'int', 'description': ''},
+		"empty_time" : {'value' : 10, 'type' : 'int', 'description': ''},
+		"interaction_time" : {'value' : 0, 'type' : 'int', 'description': ''},
+		"load_timeline" : {'value' : True, 'type' : 'bool', 'description': ''},
+		"autostart" : {'value' : True, 'type' : 'bool', 'description': ''},
+	}
+
+	with open(options_file, 'w+') as f:
+		json.dump(default_options, f)
+
+	return default_options
+
+def load_options(options_file):
+
+	if not os.path.exists(options_file):
+		return restore_options(options_file)
+
+	with open(options_file) as f:
+		options = json.load(f)
+
+	return options
+
 def load_auth(path_file):
 
-	with open(path_file) as data_file:    
+	with open(path_file) as data_file:
 		data = json.load(data_file)
 
 	auth = OAuthHandler(data["consumer_key"], data["consumer_secret"])
@@ -84,7 +123,7 @@ class OrganizedList(object):
 class QueuedListener(StreamListener, Verbose):
 
 	def __init__(self, api=None, **options):
-		
+
 		StreamListener.__init__(self,api)
 		Verbose.__init__(self, options.get("verbose_level", 1))
 
@@ -93,7 +132,7 @@ class QueuedListener(StreamListener, Verbose):
 		self.queue_thread = Thread(target=self._listen)
 		self.queue_thread.daemon = True
 		self.running = False
-		
+
 		self.locked = options.get("locked", True)
 		self.retweet_time = options.get("retweet_time", 10)
 		self.fav_time = options.get("fav_time", 10)
@@ -106,7 +145,7 @@ class QueuedListener(StreamListener, Verbose):
 			self._load_timeline()
 		if options.get("autostart", True):
 			self.start()
-			
+
 	def start(self):
 		self.vprint(">> Starting queue thread")
 		self.running = True
@@ -161,7 +200,7 @@ class QueuedListener(StreamListener, Verbose):
 	def _follow(self, interaction):
 		if interaction.follow:
 			try:
-				interaction.status.user.follow()	
+				interaction.status.user.follow()
 				self.vprint(">> Follow to @%s: %s" % (interaction.status.user.screen_name, interaction.status.user.name))
 				sleep(self.follow_time)
 			except TweepError as e:
@@ -169,10 +208,10 @@ class QueuedListener(StreamListener, Verbose):
 		return
 
 	def _listen(self):
-		
+
 		while self.running:
 			if not self.locked and self.queue.empty:
-				sleep(self.empty_time) 
+				sleep(self.empty_time)
 
 			self._interact(self.queue.get())
 
