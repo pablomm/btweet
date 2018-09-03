@@ -4,11 +4,12 @@
 
 from __future__ import absolute_import
 
+
 from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.utils import import_simplejson
 
-from btweet.utils import Interaction, QueuedListener
+from btweet.utils import Interaction, QueuedListener, proccess_text
 
 
 class GiveawayBot(QueuedListener):
@@ -50,6 +51,10 @@ class GiveawayBot(QueuedListener):
 	def on_error(self, status):
 		self.vprint(status)
 
+	def _proccess_status(self, status):
+		
+		return proccess_text(status)
+
 	def _get_status(self, data):
 
 		status = Status.parse(self.api, self.json.loads(data))
@@ -84,16 +89,17 @@ class GiveawayBot(QueuedListener):
 
 
 	def _filter(self,status):
+
+		text = self._proccess_status(status.text)
+
 		if status.text.startswith('@') and not self.at:
-			raise TweepError(">> At(@) tweet ignored: %s" % status.text)
+			raise TweepError(">> At(@) tweet ignored: %s" % text)
 
 		if status.retweeted or status.favorited:
-			raise TweepError(">> Tweet previously parsed: %s" % status.text)
-
-		text = status.text.lower()
+			raise TweepError(">> Tweet previously parsed: %s" % text)
 
 		if self._checklist(self.ignore_list,text):
-			raise TweepError(">> Tweet ignored: %s" % status.text)
+			raise TweepError(">> Tweet ignored: %s" % text)
 
 		if status.user.screen_name in self.block_users:
 			raise TweepError(">> User ignored: @%s" % status.user.screen_name)
