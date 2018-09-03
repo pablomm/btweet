@@ -31,9 +31,9 @@ from time import sleep
 
 # Fix Python 2.x.
 try:
-	input = raw_input
+    input = raw_input
 except NameError:
-	pass
+    pass
 
 from tweepy import API, OAuthHandler
 
@@ -41,7 +41,8 @@ from btweet.utils import load_options, restore_options, load_filters, restore_fi
 
 
 # Lists of commands
-commands = ['auth', 'get', 'help', 'run', 'set', 'start', 'stats', 'stop', 'filter']
+commands = ['auth', 'get', 'help', 'run',
+            'set', 'start', 'stats', 'stop', 'filter']
 
 # Script folders and files
 folder = os.path.dirname(os.path.realpath(__file__))
@@ -53,6 +54,21 @@ pid_file = os.path.join(data_folder, 'btweet.pid')
 
 listener = None
 stream = None
+daemon = None
+
+usage_text = """usage: btweet [--help] <command> [<args>]
+
+List of available commands:
+  auth    set the credentials to twitter
+  get     get the value of an option
+  set     set the value of an option
+  run     start the bot in a terminal
+  start   start the bot in background mode
+  stop    stop the bot in background mode
+  filter  get and modify the filters lists
+  help    get extensive help about a command
+
+Use 'btweet <command> -h' to get help of a command."""
 
 def suggestion(candidate, words):
     """ Provides the most similar word in the list based on the levenshtein
@@ -77,11 +93,13 @@ def suggestion(candidate, words):
 
     return best
 
+
 def load_auth(data):
 
     try:
         auth = OAuthHandler(data["consumer_key"], data["consumer_secret"])
-        auth.set_access_token(data["access_token"], data["access_token_secret"])
+        auth.set_access_token(data["access_token"],
+                              data["access_token_secret"])
         return auth, API(auth)
 
     except Exception:
@@ -89,6 +107,7 @@ def load_auth(data):
               "the credentials provided")
 
     return None
+
 
 def request_credentials():
 
@@ -105,11 +124,12 @@ def request_credentials():
     with open(credentials_file, 'w+') as f:
         json.dump(credentials, f)
 
+
 def check_credentials(credentials):
     # Check the integrity of the json
     for k in ["consumer_key", "consumer_secret", "access_token", "access_token_secret"]:
         if k not in credentials:
-            print("btweet: Error, corrupt file.\n" \
+            print("btweet: Error, corrupt file.\n"
                   "Use 'btweet help auth' for get some help.")
             return False
 
@@ -124,7 +144,7 @@ def credentials_json(filename):
     import json
 
     if not os.path.isfile(filename):
-        print("btweet: Error, file '%s' not found." \
+        print("btweet: Error, file '%s' not found."
               "Use 'btweet help auth' for get some help." % filename)
         return
 
@@ -133,7 +153,6 @@ def credentials_json(filename):
 
     if not check_credentials(credentials):
         return
-
 
     with open(credentials_file, 'w+') as f:
         json.dump(credentials, f)
@@ -144,8 +163,9 @@ def delete_credentials():
     if os.path.isfile(credentials_file):
         os.unlink(credentials_file)
     else:
-        print("There aren't credentials to delete.\n" \
+        print("There aren't credentials to delete.\n"
               "Use 'btweet help auth' for get some help.")
+
 
 def options_values(options):
     values = {}
@@ -155,12 +175,13 @@ def options_values(options):
 
     return values
 
+
 def load_credentials():
 
     import json
 
     if not os.path.isfile(credentials_file):
-        print("There aren't credentials to load.\n" \
+        print("There aren't credentials to load.\n"
               "Use 'btweet help auth' for get some help.")
         credentials = None
     else:
@@ -172,11 +193,23 @@ def load_credentials():
 
     return credentials
 
+
 def handler(signum, frame):
     print("\r", end='')
-    if listener: listener.stop()
-    if stream: stream.disconnect()
-    if daemon: daemon.exit()
+    global listener
+    global daemon
+    global stream
+
+    if listener:
+        tmp = listener
+        listener = None
+        tmp.stop()
+    if stream:
+        stream.disconnect()
+        stream = None
+    if daemon:
+        daemon.exit()
+        daemon = None
     exit()
 
 
@@ -189,7 +222,8 @@ def launch_giveaway(verbose_level=0):
 
     print("btweet: Running giveaway bot")
     credentials = load_credentials()
-    if credentials == None: return
+    if credentials == None:
+        return
 
     options = load_options(options_file)
 
@@ -199,6 +233,9 @@ def launch_giveaway(verbose_level=0):
     track_list = filters['track_list']
 
     auth, api = load_auth(credentials)
+
+    options['user_list'].append(auth.get_username())
+
     listener = GiveawayBot(api, verbose_level=verbose_level, **options)
 
     signal.signal(signal.SIGINT, handler)
@@ -206,9 +243,7 @@ def launch_giveaway(verbose_level=0):
     while True:
         try:
             stream = Stream(auth, listener)
-            stream.filter(track = track_list)
-
-
+            stream.filter(track=track_list)
 
         except UnicodeEncodeError:
             print(">> Unicode exception")
@@ -218,13 +253,14 @@ def launch_giveaway(verbose_level=0):
             listener.restart()
             sleep(10)
 
+
 def show_options(option):
     options = load_options(options_file)
 
     if option == 'all':
         print("Available options")
         for op in options:
-            print(op,options[op]['value'],options[op]['description'])
+            print(op, options[op]['value'], options[op]['description'])
     else:
 
         options_names = list(options.keys())
@@ -234,7 +270,9 @@ def show_options(option):
             print("Use 'btweet help get' for get some help.")
 
         else:
-            print(option,options[option]['value'],options[option]['description'])
+            print(option, options[option]['value'],
+                  options[option]['description'])
+
 
 def set_option(option, value):
     import json
@@ -256,16 +294,18 @@ def set_option(option, value):
                 value = True
             elif value.lower() in ("no", "false", "f", "0"):
                 value = False
-            else: raise ValueError
+            else:
+                raise ValueError
 
     except:
-        print("btweet: Invalid value. Must be",options[option]['type'] + ".")
+        print("btweet: Invalid value. Must be", options[option]['type'] + ".")
         return
 
     options[option]['value'] = value
 
     with open(options_file, 'w') as f:
-        json.dump(options,f)
+        json.dump(options, f)
+
 
 def check_daemon():
 
@@ -289,7 +329,8 @@ class Parser:
 
         # Creates the parser to call the submodules
         self.parser = argparse.ArgumentParser(add_help=False)
-        self.parser.add_argument('command',default='usage',type=str,nargs='?')
+        self.parser.add_argument(
+            'command', default='usage', type=str, nargs='?')
 
     def __call__(self):
 
@@ -330,11 +371,10 @@ class Parser:
         else:
             credentials = load_credentials()
 
-
     def help(self, args):
         help_parser = argparse.ArgumentParser(prog='btweet help')
         help_parser.add_argument('command', nargs='?', default=None, choices=commands,
-                            help='command to get help', type=str)
+                                 help='command to get help', type=str)
 
         parsed = help_parser.parse_args(args)
 
@@ -342,7 +382,7 @@ class Parser:
 
         run_parser = argparse.ArgumentParser(prog='btweet run')
         run_parser.add_argument('-v', '--verbose', action='count', default=0,
-                                 help='verbose mode')
+                                help='verbose mode')
         parsed = run_parser.parse_args(args)
 
         launch_giveaway(parsed.verbose + 1)
@@ -375,26 +415,24 @@ class Parser:
         else:
             print("btweet: Error, the daemon is not running.")
 
-
     def get(self, args):
 
         options_parser = argparse.ArgumentParser(prog='btweet get')
         options_parser.add_argument('option', nargs='?', default='all',
-                            help='option to get value', type=str)
+                                    help='option to get value', type=str)
 
         parsed = options_parser.parse_args(args)
 
         show_options(parsed.option)
-
 
     def set(self, args):
 
         options_parser = argparse.ArgumentParser(prog='btweet get')
 
         options_parser.add_argument('option', nargs=1,
-                            help='option to set value')
+                                    help='option to set value')
         options_parser.add_argument('value', nargs='?',
-                            help='value to set')
+                                    help='value to set')
 
         parsed = options_parser.parse_args(args)
 
@@ -408,13 +446,50 @@ class Parser:
 
     def filter(self, args):
 
-        print(load_filters(filters_file))
+        import json
+        filters = load_filters(filters_file)
+        filters_names = list(filters.keys()).append("default")
+
         filter_parser = argparse.ArgumentParser(prog='btweet filter')
 
-        filter_parser.add_argument("filter", nargs=1)
+        filter_parser.add_argument("filter", nargs=1, choices=filters_names)
+
+        group = filter_parser.add_mutually_exclusive_group()
+
+        group.add_argument('-a', '--add', nargs=1,
+                                    help='word or phrase to add')
+        group.add_argument('-d', '--delete', nargs=1,
+                                    help='word or phrase to delete')
+
+
+        parsed = filter_parser.parse_args(args)
+
+        if parsed.filter[0] == "default":
+
+            restore_filters(filters_file)
+
+        elif not parsed.add and not parsed.delete:
+            print("btweet: %s:" % parsed.filter[0])
+            for w in filters[parsed.filter[0]]:
+                print("\t",w)
+        else:
+            if parsed.add:
+                filters[parsed.filter[0]].append(parsed.add[0])
+            else:
+                filters[parsed.filter[0]].remove(parsed.add[0])
+
+            with open(filters_file,"w") as f:
+                json.dump(filters,f)
+
+
 
     def usage(self, args):
-        print('usage')
+
+        if check_daemon():
+            print("btweet: the bot is running in background.")
+
+        print(usage_text)
+
 
 
 def main():
@@ -427,4 +502,4 @@ def main():
 
 
 if __name__ == '__main__':
-     main()
+    main()
