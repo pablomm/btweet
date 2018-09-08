@@ -26,7 +26,6 @@ import argparse
 import os
 import signal
 
-from daemonize import Daemonize
 from time import sleep
 
 # Fix Python 2.x.
@@ -402,6 +401,8 @@ class Parser:
         launch_giveaway(parsed.verbose + 1)
 
     def start(self, args):
+
+        from daemonize import Daemonize
 
         run_parser = argparse.ArgumentParser(prog='btweet start')
         run_parser.parse_args(args)
