@@ -1,0 +1,113 @@
+'\" t
+.\" Copyright (c) 2018 Pablo Marcos
+.\"
+.\" %%%LICENSE_START(GPLv3+_DOC_FULL)
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.\" %%%LICENSE_END
+.\"
+.\" Modified, Wed Sep 5 2018
+.\"
+.TH "btweet filter" 7 2018-09-05 btweet "btweet manual"
+.SH NAME
+btweet filter \- Manage filters to proccess the tweets
+.SH SYNOPSIS
+.PP
+.PP
+.B btweet filter \ default\ [-h]
+.br
+.B btweet filter <filter> [-h] [-a ADD | -d DELETE]
+.PP
+.SH DESCRIPTION
+Manage the filters to process the tweets. There are 5 filters:
+.RS 2
+.PP
+.B Track list
+.RS 4
+List use to stream tweets, will search for tweets that contains all the words of
+an entry of the list. If there are a coincidence of one of the entries the tweet
+will be processed.
+.RE
+.PP
+.B Ignore list
+.RS 4
+The tweet will be ignored if contains any of the words of the list.
+.RE
+.PP
+.B Follow list
+.RS 4
+The author of the tweet will be follow if it contains any of the
+words of the list.
+.RE
+.PP
+.B User list
+.RS 4
+List of users that will be ignored. The owner of the account will be ignored
+automatically.
+.RE
+.PP
+.B Fav list
+.RS 4
+The tweet will be faved if contains any of the words of the list.
+.RE
+.RE
+.SH OPTIONS
+.B <filter>
+.RS 6
+Name of filter to change, if "default" is passed restores the values by default
+as a giveaway bot. The available filters are "track_list", "ignore_list",
+"follow_list", "fav_list", "user_list".
+.PP
+If the options
+.B -a
+or
+.B -d
+are not specified the filter selected will be printed.
+.RE
+.PP
+.B -h
+.RS 6
+Show command line help
+.RE
+.PP
+.B -a ADD
+.RS 6
+Add a word or expression to the selected filter list
+.RE
+.PP
+.B -d DELETE
+.RS 6
+Delete a word or expression to the selected filter list
+.RE
+.SH BUGS
+If you find a bug I will appreciate if you report it opening an issue in
+.I https://github.com/pablomm/btweet/issues/new
+or send a message to the email provided.
+.SH AUTHOR
+Pablo Marcos <pablo.marcosm@estudiante.uam.es>.
+.SH SEE ALSO
+.BR "btweet" (7) ,
+.BR "btweet auth" (7),
+.BR "btweet get" (7) ,
+.BR "btweet help" (7) ,
+.BR "btweet run" (7) ,
+.BR "btweet set" (7) ,
+.BR "btweet start" (7) ,
+.BR "btweet stats" (7) ,
+.BR "btweet stop" (7) ,

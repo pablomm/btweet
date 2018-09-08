@@ -51,6 +51,7 @@ credentials_file = os.path.join(data_folder, 'credentials.json')
 options_file = os.path.join(data_folder, 'options.json')
 filters_file = os.path.join(data_folder, 'filters.json')
 pid_file = os.path.join(data_folder, 'btweet.pid')
+man_folder = os.path.join(folder, 'man')
 
 listener = None
 stream = None
@@ -353,16 +354,17 @@ class Parser:
     def auth(self, args):
 
         auth_parser = argparse.ArgumentParser(prog='btweet auth')
-        auth_parser.add_argument('-a', '--add', action='store_true',
+        group = auth_parser.add_mutually_exclusive_group()
+        group.add_argument('-a', '--add', action='store_true',
                                  help='add or replace the twitter api credentials')
-        auth_parser.add_argument('-d', '--delete', action='store_true',
+        group.add_argument('-d', '--delete', action='store_true',
                                  help='delete the current twitter api credentials')
-        auth_parser.add_argument('-f', '--file', type=str,
+        group.add_argument('-f', '--file', type=str,
                                  help='file with the credentials in json format')
 
         parsed = auth_parser.parse_args(args)
 
-        if parsed.add and not parsed.file:
+        if parsed.add:
             credentials = request_credentials()
         elif parsed.file:
             credentials = credentials_json(parsed.file)
@@ -378,6 +380,18 @@ class Parser:
 
         parsed = help_parser.parse_args(args)
 
+        cmd = os.path.join(man_folder, "btweet")
+
+        if parsed.command:
+            cmd += "-" + parsed.command
+
+        cmd += ".7"
+
+        if not os.path.exists(cmd):
+            print("btweet: Error, help not found. Try with 'btweet %s -h'." % parsed.command)
+        else:
+            os.execvp("man", ["-M", cmd ])
+
     def run(self, args):
 
         run_parser = argparse.ArgumentParser(prog='btweet run')
@@ -390,7 +404,7 @@ class Parser:
     def start(self, args):
 
         run_parser = argparse.ArgumentParser(prog='btweet start')
-
+        run_parser.parse_args(args)
         pid = check_daemon()
 
         if pid:
@@ -406,7 +420,7 @@ class Parser:
 
     def stop(self, args):
         run_parser = argparse.ArgumentParser(prog='btweet stop')
-
+        run_parser.parse_args(args)
         pid = check_daemon()
 
         if pid:
@@ -427,7 +441,7 @@ class Parser:
 
     def set(self, args):
 
-        options_parser = argparse.ArgumentParser(prog='btweet get')
+        options_parser = argparse.ArgumentParser(prog='btweet set')
 
         options_parser.add_argument('option', nargs=1,
                                     help='option to set value')
@@ -448,35 +462,43 @@ class Parser:
 
         import json
         filters = load_filters(filters_file)
-        filters_names = list(filters.keys()).append("default")
+        filters_names = list(filters.keys())
 
         filter_parser = argparse.ArgumentParser(prog='btweet filter')
+        subparsers = filter_parser.add_subparsers(dest='filter')
 
-        filter_parser.add_argument("filter", nargs=1, choices=filters_names)
+        for p in filters_names:
+            sparser = subparsers.add_parser(p)
 
-        group = filter_parser.add_mutually_exclusive_group()
+            group = sparser.add_mutually_exclusive_group()
 
-        group.add_argument('-a', '--add', nargs=1,
-                                    help='word or phrase to add')
-        group.add_argument('-d', '--delete', nargs=1,
-                                    help='word or phrase to delete')
+            group.add_argument('-a', '--add', nargs=1,
+                                        help='word or phrase to add')
+            group.add_argument('-d', '--delete', nargs=1,
+                                        help='word or phrase to delete')
 
+
+        subparsers.add_parser('default')
 
         parsed = filter_parser.parse_args(args)
 
-        if parsed.filter[0] == "default":
+        if parsed.filter == None:
+            print("btweet: Use 'btweet filter -h' to show the help.")
+            return
+
+        if parsed.filter == "default":
 
             restore_filters(filters_file)
 
         elif not parsed.add and not parsed.delete:
-            print("btweet: %s:" % parsed.filter[0])
-            for w in filters[parsed.filter[0]]:
+            print("btweet: %s:" % parsed.filter)
+            for w in filters[parsed.filter]:
                 print("\t",w)
         else:
             if parsed.add:
-                filters[parsed.filter[0]].append(parsed.add[0])
+                filters[parsed.filter].append(parsed.add[0])
             else:
-                filters[parsed.filter[0]].remove(parsed.add[0])
+                filters[parsed.filter].remove(parsed.delete[0])
 
             with open(filters_file,"w") as f:
                 json.dump(filters,f)

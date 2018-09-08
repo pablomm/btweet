@@ -1,0 +1,83 @@
+'\" t
+.\" Copyright (c) 2018 Pablo Marcos
+.\"
+.\" %%%LICENSE_START(GPLv3+_DOC_FULL)
+.\" This is free documentation; you can redistribute it and/or
+.\" modify it under the terms of the GNU General Public License as
+.\" published by the Free Software Foundation; either version 3 of
+.\" the License, or (at your option) any later version.
+.\"
+.\" The GNU General Public License's references to "object code"
+.\" and "executables" are to be interpreted as the output of any
+.\" document formatting or typesetting system, including
+.\" intermediate and printed output.
+.\"
+.\" This manual is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public
+.\" License along with this manual; if not, see
+.\" <http://www.gnu.org/licenses/>.
+.\" %%%LICENSE_END
+.\"
+.\" Modified, Wed Sep 5 2018
+.\"
+.TH "btweet auth" 7 2018-09-05 btweet "btweet manual"
+.SH NAME
+btweet auth \- Manage the credentials to connect with twitter
+.SH SYNOPSIS
+.PP
+.PP
+.B btweet auth [-h] [-a | -d | -f FILE]
+.PP
+.SH DESCRIPTION
+Manage the credentials to connect with twitter. You will need 4 credentials:
+API key, API secret key, Access token and Access secret token. If you do not
+have them go to
+.I https://developer.twitter.com/
+and create and app.
+.SH OPTIONS
+.RS 2
+.B -h
+.br
+.RS 12
+Show command line help
+.RE
+.PP
+.B -a
+.br
+.RS 12
+The app will request the credentials via terminal
+.RE
+.PP
+.B -d
+.br
+.RS 12
+Delete the credentials stored
+.RE
+.PP
+.B -f FILE
+.br
+.RS 12
+Introduce the credentials stored in a json file with the fields "consumer_key",
+"consumer_secret", "access_token" and "access_secret_token"
+.RE
+.RE
+.SH BUGS
+If you find a bug I will appreciate if you report it opening an issue in
+.I https://github.com/pablomm/btweet/issues/new
+or send a message to the email provided.
+.SH AUTHOR
+Pablo Marcos <pablo.marcosm@estudiante.uam.es>.
+.SH SEE ALSO
+.BR "btweet" (7) ,
+.BR "btweet filter" (7),
+.BR "btweet get" (7) ,
+.BR "btweet help" (7) ,
+.BR "btweet run" (7) ,
+.BR "btweet set" (7) ,
+.BR "btweet start" (7) ,
+.BR "btweet stats" (7) ,
+.BR "btweet stop" (7) ,

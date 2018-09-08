@@ -25,6 +25,10 @@ from tweepy.error import TweepError
 from tweepy.models import Status
 from tweepy.streaming import StreamListener
 
+CRED = '\033[91m'
+CGREEN = '\033[92m'
+CEND = '\033[0m'
+
 
 def restore_filters(filter_file):
     default_filters = {
@@ -55,10 +59,12 @@ def load_filters(filter_file):
 def restore_options(options_file):
 
     default_options = {
-        'username': {'value': None, 'type': 'str', 'description': ''},
+        'enable_retweet' : {'value': True, 'type': 'bool', 'description': ''},
+		'enable_follow' : {'value': True, 'type': 'bool', 'description': ''},
+		'enable_fav' : {'value': True, 'type': 'bool', 'description': ''},
         'at': {'value': False, 'type': 'bool', 'description': ''},
-        'original': {'value': False, 'bool': 'str', 'description': ''},
-        'quoted': {'value': False, 'type': 'str', 'description': ''},
+        'original': {'value': False, 'type': 'bool', 'description': ''},
+        'quoted': {'value': False, 'type': 'bool', 'description': ''},
         'favs': {'value': 3, 'type': 'int', 'description': ''},
         'retweets': {'value': 3, 'type': 'int', 'description': ''},
         "queue_size": {'value': 20, 'type': 'int', 'description': ''},
@@ -220,31 +226,31 @@ class QueuedListener(StreamListener, Verbose):
         if interaction.retweet:
             try:
                 interaction.status.retweet()
-                self.vprint(">> New retweet")
+                self.vprint(CGREEN + '>> New retweet' + CEND)
                 sleep(self.retweet_time)
             except TweepError as e:
-                raise TweepError(">> Retweet error: %s" % e.reason)
+                raise TweepError(CRED + (">> Retweet error: %s" % e.reason)+CEND)
         return
 
     def _favorite(self, interaction):
         if interaction.favorite:
             try:
                 interaction.status.favorite()
-                self.vprint(">> New favorite")
+                self.vprint(CGREEN + ">> New favorite" + CEND)
                 sleep(self.fav_time)
             except TweepError as e:
-                raise TweepError(">> Favorite error: %s" % e.reason)
+                raise TweepError(CRED + (">> Favorite error: %s" % e.reason)+ CEND)
         return
 
     def _follow(self, interaction):
         if interaction.follow:
             try:
                 interaction.status.user.follow()
-                self.vprint(">> Follow to @%s: %s" % (
-                    interaction.status.user.screen_name, interaction.status.user.name))
+                self.vprint(CGREEN + (">> Follow to @%s: %s" % (
+                    interaction.status.user.screen_name, interaction.status.user.name)) + CEND)
                 sleep(self.follow_time)
             except TweepError as e:
-                raise TweepError(">> Follow error: %s" % e)
+                raise TweepError(CRED + (">> Follow error: %s" % e) + CEND)
         return
 
     def _listen(self):
