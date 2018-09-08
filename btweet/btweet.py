@@ -36,7 +36,7 @@ except NameError:
 
 from tweepy import API, OAuthHandler
 
-from btweet.utils import load_options, restore_options, load_filters, restore_filters
+from .utils import load_options, restore_options, load_filters, restore_filters
 
 
 # Lists of commands
@@ -44,7 +44,8 @@ commands = ['auth', 'get', 'help', 'run',
             'set', 'start', 'stats', 'stop', 'filter']
 
 # Script folders and files
-folder = os.path.dirname(os.path.realpath(__file__))
+package_folder = os.path.dirname(os.path.realpath(__file__))
+folder = os.path.dirname(package_folder)
 data_folder = os.path.join(folder, 'data')
 credentials_file = os.path.join(data_folder, 'credentials.json')
 options_file = os.path.join(data_folder, 'options.json')
