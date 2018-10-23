@@ -36,7 +36,7 @@ except NameError:
 
 from tweepy import API, OAuthHandler
 
-from .utils import load_options, restore_options, load_filters, restore_filters
+from utils import load_options, restore_options, load_filters, restore_filters
 
 
 # Lists of commands

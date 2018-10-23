@@ -32,10 +32,10 @@ CEND = '\033[0m'
 
 def restore_filters(filter_file):
     default_filters = {
-        'track_list': ["retweet to win", "sorteo RT", "concurso RT"],
-        'ignore_list': ["plz", "ayuda", "gracias", "please", "favor", "signup", "thanks", "vote", "vota"],
-        'follow_list': ["#follow", "follow", "sigue", "sigueme", "seguir", "following", "siguiendo", "seguidores", "seguidor", "rt+follow", "sigan", "siguenos"],
-        'fav_list': ["fav", "rt+fav", "fave", "favorito", "favorite", "like", "mg"],
+        'track_list': ["rt"],
+        'ignore_list': [],
+        'follow_list': ["follow"],
+        'fav_list': ["fav"],
         'user_list': [],
     }
 
@@ -43,6 +43,7 @@ def restore_filters(filter_file):
         json.dump(default_filters, f)
 
     return default_filters
+
 
 
 def load_filters(filter_file):
