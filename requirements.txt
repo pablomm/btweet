@@ -1,3 +1,4 @@
+setuptools
 tweepy
 daemonize
 python-levenshtein

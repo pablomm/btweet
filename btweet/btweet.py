@@ -36,7 +36,7 @@ except NameError:
 
 from tweepy import API, OAuthHandler
 
-from utils import load_options, restore_options, load_filters, restore_filters
+from .utils import load_options, restore_options, load_filters, restore_filters
 
 
 # Lists of commands
@@ -213,6 +213,10 @@ def handler(signum, frame):
         daemon = None
     exit()
 
+def merge_two_dicts(x, y):
+    z = x.copy()   # start with x's keys and values
+    z.update(y)    # modifies z with y's keys and values & returns None
+    return z
 
 def launch_giveaway(verbose_level=0):
     from tweepy import Stream
@@ -230,7 +234,7 @@ def launch_giveaway(verbose_level=0):
 
     options = options_values(options)
     filters = load_filters(filters_file)
-    options = {**filters, **options}
+    options = merge_two_dicts(filters, options)
     track_list = filters['track_list']
 
     auth, api = load_auth(credentials)
