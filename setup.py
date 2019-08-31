@@ -46,7 +46,7 @@ setup(
     keywords = "twitter bot",
     url = "https://github.com/pablomm/btweet",
     packages=['btweet'],
-    install_requires=['tweepy', 'daemonize', 'python-levenshtein'],
+    install_requires=['tweepy<=3.7', 'daemonize'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Console",
