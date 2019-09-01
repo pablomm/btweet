@@ -91,7 +91,7 @@ The actions of the bot are based on four lists of words:
 * *track_list*: list of words used to 
 [stream](https://developer.twitter.com/en/docs/tweets/filter-realtime/guides/basic-stream-parameters.html) twitter.
 * *follow_list*: list of words used to follow a tweet author.
-* *fav_list*: list of words use to give like a tweet.
+* *fav_list*: list of words use to like a tweet.
 * *ignore_list*: list of words to ignore a tweet.
 * *user_list*: list of user to be ignored.
 
