@@ -91,7 +91,7 @@ class GiveawayBot(QueuedListener):
 		return not self.retweets > status.retweet_count
 
 	def _checkfavorite(self, status, text):
-		return self._checklist(self.fav_list, text) and self.favs <= status.favorite_count and self.enable_fav
+		return self._checklist(self.fav_list, text) and self.favs >= status.favorite_count and self.enable_fav
 
 
 	def _checkfollow(self, status, text):
